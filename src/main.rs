@@ -3,6 +3,7 @@ mod types;
 
 // namespace
 use clap::Parser;
+use std::{io::{BufReader, BufRead}, fs::File};
 use crate::types::cli::Cli;
 
 fn main() {
@@ -11,10 +12,11 @@ fn main() {
   // args.path needs filename extension
   // correct: cargo run hello src/main.rs
   // incorrect: cargo run hello src/main
-  let content = std::fs::read_to_string(&args.path).expect("the file is not found");
-  for line in content.lines() {
-    if line.contains(&args.pattern) {
-      println!("{}", line);
+  let file = BufReader::new(File::open(&args.path).expect("the file is not found"));
+  for line in file.lines() {
+    // as_ref is so usable like this situation
+    if line.as_ref().unwrap().contains(&args.pattern) {
+      println!("{}", line.unwrap());
     }
   }
 }
