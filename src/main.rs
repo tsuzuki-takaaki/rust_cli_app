@@ -2,10 +2,10 @@
 mod types;
 
 // namespace
-use std::env::args;
+use clap::Parser;
+use crate::types::cli::Cli;
 
 fn main() {
-  let pattern = args().nth(1).unwrap();
-  let path = args().nth(2).unwrap();
-  println!("pattern: {}, path: {}", pattern, path);
+  let args = Cli::parse();
+  println!("{:?}", args);
 }
