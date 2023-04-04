@@ -13,7 +13,7 @@ fn main() {
   // args.path needs filename extension
   // correct: cargo run hello src/main.rs
   // incorrect: cargo run hello src/main
-  let file = BufReader::new(File::open(&args.path).expect("the file is not found"));
+  let file = BufReader::new(File::open(&args.path).expect("No such file or directory"));
   check_pattern(file, &args)
 }
 
