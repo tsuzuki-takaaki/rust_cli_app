@@ -3,8 +3,11 @@ mod types;
 
 // namespace
 use clap::Parser;
-use std::{io::{BufReader, BufRead, BufWriter}, fs::File};
+use colored::*;
+use regex::Regex;
+use std::{io::{ BufReader, BufRead, BufWriter }, fs::File};
 use std::io::Write;
+
 use crate::types::cli::Cli;
 
 fn main() {
@@ -20,10 +23,19 @@ fn main() {
 fn check_pattern(file: BufReader<File>, args: &Cli) {
   let stdout = std::io::stdout();
   let mut handle = BufWriter::new(stdout.lock());
+
+  let re = Regex::new(&args.pattern).unwrap();
+  // 91 is BrightRed
+  // not using colored because ColoredString is not implemented by Replacer[https://docs.rs/regex/latest/regex/trait.Replacer.html]
+  let rep = format!("{}{}{}", "\x1b[91m", args.pattern, "\x1b[0m");
+
   for line in file.lines() {
-    // as_ref is so usable like this situation
-    if line.as_ref().unwrap().contains(&args.pattern) {
-      writeln!(handle, "{}", line.unwrap()).unwrap();
+    let line = line.unwrap();
+    if line.contains(&args.pattern) {
+      let result = re.replace_all(&line, &rep);
+      let path = &args.path.to_str().unwrap().bright_yellow();
+      
+      writeln!(handle, "{}: {}", path, result).unwrap();
     }
   }
 }
