@@ -5,22 +5,34 @@ mod types;
 use clap::Parser;
 use colored::*;
 use regex::Regex;
-use std::{io::{ BufReader, BufRead, BufWriter }, fs::File};
+use std::{io::{ BufReader, BufRead, BufWriter }, fs::File, path::PathBuf};
 use std::io::Write;
 
 use crate::types::cli::Cli;
 
 fn main() {
   let args = Cli::parse();
+  let target_path = match &args.path {
+    Some(path) => std::env::current_dir().unwrap().join(path),
+    None => std::env::current_dir().unwrap()
+  };
 
-  // args.path needs filename extension
-  // correct: cargo run hello src/main.rs
-  // incorrect: cargo run hello src/main
-  let file = BufReader::new(File::open(&args.path).expect("No such file or directory"));
-  check_pattern(file, &args)
+  find_leaf(&target_path, &args);
 }
 
-fn check_pattern(file: BufReader<File>, args: &Cli) {
+fn find_leaf(target_path: &PathBuf, args: &Cli) {
+  if target_path.is_file() {
+    check_pattern(&target_path, args);
+  } else {
+    for entry in target_path.read_dir().expect("No such directory") {
+      find_leaf(&entry.unwrap().path(), args);
+    }
+  }
+}
+
+fn check_pattern(target_path: &PathBuf, args: &Cli) {
+  let file = BufReader::new(File::open(target_path).expect("No such file"));
+
   let stdout = std::io::stdout();
   let mut handle = BufWriter::new(stdout.lock());
 
@@ -33,9 +45,8 @@ fn check_pattern(file: BufReader<File>, args: &Cli) {
     let line = line.unwrap();
     if line.contains(&args.pattern) {
       let result = re.replace_all(&line, &rep);
-      let path = &args.path.to_str().unwrap().bright_yellow();
       
-      writeln!(handle, "{}: {}", path, result).unwrap();
+      writeln!(handle, "{}: {}", target_path.to_str().unwrap().yellow(), result).unwrap();
     }
   }
 }
